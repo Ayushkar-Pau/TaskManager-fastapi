@@ -25,7 +25,10 @@ def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
 
     # create the DB object
     new_user = DBUser(
-        username=user_data.username, email=user_data.email, hashed_password=hashed_pwd
+        username=user_data.username,
+        email=user_data.email,
+        hashed_password=hashed_pwd,
+        role="user",
     )
 
     # save and return
@@ -47,7 +50,7 @@ def login(
         raise HTTPException(status_code=401, detail="Invalid Credentials")
 
     # 3. Create the 'JWT'
-    token = create_access_token(data={"sub": user.email})
+    token = create_access_token(data={"sub": user.email, "role": user.role})
 
     # 4. Return it to the user
     return {"access_token": token, "token_type": "bearer"}

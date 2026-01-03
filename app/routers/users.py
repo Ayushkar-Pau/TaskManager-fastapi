@@ -17,7 +17,7 @@ def read_users(
     db: Session = Depends(get_db),
     current_user: OAuth2PasswordRequestForm = Depends(get_current_user),
 ):
-    if current_user.email != "ayuayu11@gmail.com":
+    if "admin" not in current_user.current_scopes:
         raise HTTPException(status_code=403, detail="Access Denied!")
 
     return db.query(DBUser).all()

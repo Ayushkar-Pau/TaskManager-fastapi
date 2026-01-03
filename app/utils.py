@@ -12,6 +12,11 @@ def create_access_token(data: dict):
     expire = datetime.now(timezone.utc) + timedelta(minutes=60)
     to_encode.update({"exp": expire})
 
+    if to_encode.get("role") == "admin":
+        to_encode.update({"scopes": ["admin", "read", "write"]})
+    else:
+        to_encode.update({"scopes": ["read", "write"]})
+
     return jwt.encode(
         to_encode, os.getenv("SECRET_KEY"), algorithm=os.getenv("ALGORITHM")
     )

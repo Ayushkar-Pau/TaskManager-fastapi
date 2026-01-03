@@ -30,6 +30,8 @@ def get_current_user(
             token, os.getenv("SECRET_KEY"), algorithms=[os.getenv("ALGORITHM")]
         )
         email: str = payload.get("sub")
+        user_scopes: list = payload.get("scopes", [])
+
         if email is None:
             raise credentials_exception
     except jwt.PyJWTError:
@@ -40,5 +42,6 @@ def get_current_user(
     if user is None:
         raise credentials_exception
 
+    user.current_scopes = user_scopes
     # 3. If everything is good, return the user object
     return user
