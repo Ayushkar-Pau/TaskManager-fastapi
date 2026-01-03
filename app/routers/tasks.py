@@ -39,7 +39,8 @@ def read_task_by_id(
     db: Session = Depends(get_db),
     current_user: DBUser = Depends(get_current_user),
 ):
-    task = db.query(DBTask).filter(DBTask.id == task_id).first()
+
+    task = db.query(DBTask).filter(DBTask.id == task_id, DBTask.owner_id == current_user.id).first()
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     return task
