@@ -10,6 +10,7 @@ from app.models import TaskResponse, TaskCreate, TaskStatus, TaskUpdate, SortOrd
 from app.db_models import DBTask, DBUser
 from app.database import get_db
 from app.dependencies import get_current_user
+
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
 
@@ -39,8 +40,15 @@ def read_task_by_id(
     db: Session = Depends(get_db),
     current_user: DBUser = Depends(get_current_user),
 ):
+    if current_user.role != "admin":
+        task = (
+            db.query(DBTask)
+            .filter(DBTask.id == task_id, DBTask.owner_id == current_user.id)
+            .first()
+        )
+    else:
+        task = db.query(DBTask).filter(DBTask.id == task_id).first()
 
-    task = db.query(DBTask).filter(DBTask.id == task_id, DBTask.owner_id == current_user.id).first()
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     return task
@@ -54,9 +62,13 @@ def read_tasks(
     limit: Optional[int] = 10,
     sort_order: Optional[SortOrder] = SortOrder.ascending,
     db: Session = Depends(get_db),
-    current_user: OAuth2PasswordRequestForm = Depends(get_current_user),
+    current_user: DBUser = Depends(get_current_user),
 ):
-    query = db.query(DBTask).filter(DBTask.owner_id == current_user.id)
+    if current_user.role != "admin":
+        query = db.query(DBTask).filter(DBTask.owner_id == current_user.id)
+    else:
+        query = db.query(DBTask)
+
     if status:
         query = query.filter(DBTask.status == status)
     if priority:
@@ -66,6 +78,7 @@ def read_tasks(
         query = query.order_by(DBTask.id)
     else:
         query = query.order_by(desc(DBTask.id))
+
     tasks = query.offset(skip).limit(limit).all()
 
     return tasks
@@ -77,13 +90,17 @@ def update_task(
     task_id: int,
     task_update: TaskUpdate,
     db: Session = Depends(get_db),
-    current_user: OAuth2PasswordRequestForm = Depends(get_current_user),
+    current_user: DBUser = Depends(get_current_user),
 ):
-    task = (
-        db.query(DBTask)
-        .filter(DBTask.id == task_id, DBTask.owner_id == current_user.id)
-        .first()
-    )
+    if current_user.role != "admin":
+        task = (
+            db.query(DBTask)
+            .filter(DBTask.id == task_id, DBTask.owner_id == current_user.id)
+            .first()
+        )
+    else:
+        task = db.query(DBTask).filter(DBTask.id == task_id).first()
+
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     update_data = task_update.model_dump(exclude_unset=True)
@@ -103,13 +120,17 @@ def update_task(
 def delete_task(
     task_id: int,
     db: Session = Depends(get_db),
-    current_user: OAuth2PasswordRequestForm = Depends(get_current_user),
+    current_user: DBUser = Depends(get_current_user),
 ):
-    task_to_delete = (
-        db.query(DBTask)
-        .filter(DBTask.id == task_id, DBTask.owner_id == current_user.id)
-        .first()
-    )
+    if current_user.role != "admin":
+        task_to_delete = (
+            db.query(DBTask)
+            .filter(DBTask.id == task_id, DBTask.owner_id == current_user.id)
+            .first()
+        )
+    else:
+        task_to_delete = db.query(DBTask).filter(DBTask.id == task_id).first()
+
     if not task_to_delete:
         raise HTTPException(status_code=404, detail="Task not found")
     db.delete(task_to_delete)
